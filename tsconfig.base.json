@@ -1,0 +1,22 @@
+{
+  "compileOnSave": false,
+  "compilerOptions": {
+    "rootDir": ".",
+    "sourceMap": false,
+    "declaration": false,
+    "emitDecoratorMetadata": true,
+    "experimentalDecorators": true,
+    "importHelpers": true,
+    "target": "es2015",
+    "module": "esnext",
+    "lib": ["es2017", "dom"],
+    "skipLibCheck": true,
+    "skipDefaultLibCheck": true,
+    "baseUrl": ".",
+    "paths": {
+      "@highkey-dev/sdk": ["packages/sdk/src/index.ts"],
+      "@highkey-dev/auth-server": ["packages/authserver/src/index.ts"]
+    }
+  },
+  "exclude": ["node_modules", "tmp"]
+}
