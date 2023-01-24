@@ -143,7 +143,7 @@ export async function verify(
   );
   //Step 17: Verify that the signature is valid. To do so, concatenate authenticatorData and hash and encrypt it with credentialPublicKey (The key that is stored for our specific user).
   //Note: Verification step copied from https://github.com/MicrosoftEdge/webauthnsample/blob/master/fido.js
-  const sig = Buffer.from(assertion.response.signature);
+  const sig = new Uint8Array(Buffer.from(assertion.response.signature));
   const alg = key.kty === "RSA" ? "RSA-SHA256" : "sha256";
 
   const convertedKey: CryptoKey = await crypto.subtle.importKey(
@@ -154,18 +154,19 @@ export async function verify(
     ["verify"]
   );
 
-  let signedData = new Uint8Array(hashAuthData.length + hashClient.length);
-  signedData.set((assertion.response.authenticatorData as any).buffer);
-  signedData.set(hashClient, hashAuthData.length);
+  let signedData = new Uint8Array(assertion.response.authenticatorData.length + hashClient.length);
+  signedData.set((assertion.response.authenticatorData as any));
+  signedData.set(hashClient, assertion.response.authenticatorData.length);
 
-  const rawSignature = derToRaw(sig);
+  const rawSignature = derToRaw(assertion.response.signature);
 
   const res = await crypto.subtle.verify(
     { name: "ECDSA", namedCurve: "P-256", hash: { name: "SHA-256" } } as any,
     convertedKey,
-    rawSignature.buffer,
+    rawSignature,
     signedData.buffer
   );
+
   if (!res)
     return {
       status: 403,

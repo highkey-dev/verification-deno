@@ -1,6 +1,5 @@
 import { Buffer } from "https://deno.land/std@0.173.0/node/internal/buffer.mjs";
-import { verify } from "./app/authentication/verify.ts"
-import * as CBOR from "https://deno.land/x/cbor@v1.4.1/index.js";
+import { verify } from "./app/authentication/verify.ts";
 
 export async function VerifyCredential(assertion: any, userId: any, key: any) {
     const res: any = await verify(assertion, userId, key);
@@ -449,10 +448,11 @@ let jwk: any = {
         201
     ]
 };
-const pk = Buffer.from(jwk.data);
-verificationObj.response.authenticatorData = Buffer.from(verificationObj.response.authenticatorData.data);
-verificationObj.response.clientDataJSON = Buffer.from(verificationObj.response.clientDataJSON.data);
-verificationObj.response.signature = Buffer.from(verificationObj.response.signature);
+
+const pk = new Uint8Array(Buffer.from(jwk.data));
+(verificationObj.response.authenticatorData as any) = new Uint8Array(Buffer.from(verificationObj.response.authenticatorData.data));
+(verificationObj.response.clientDataJSON as any) = new Uint8Array(Buffer.from(verificationObj.response.clientDataJSON.data));
+(verificationObj.response.signature as any) =  new Uint8Array(Buffer.from(verificationObj.response.signature));
 
 const userId = "j8uGAKmNAGxJoGFedFfhBV2ZFnLGpumW7U1CuIGdI38";
 
