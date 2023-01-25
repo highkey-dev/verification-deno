@@ -5,15 +5,15 @@ import * as cache from "./../storage/challengeCache.ts";
 import { derToRaw, parseAuthenticatorData, sha256 } from "./util.ts";
 
 import { Buffer } from "https://deno.land/std@0.162.0/node/buffer.ts";
-import { config } from "https://deno.land/std/dotenv/mod.ts";
+import { Configuration } from "../models/custom/config.ts";
 
 //This method implements the W3C standard for verifying Webauthn login requests. You can find this standard here: https://w3c.github.io/webauthn/#sctn-verifying-assertion
 export async function verify(
   assertion: PublicKeyCredential,
   userId: string,
-  key: any
+  key: any,
+  config: Configuration
 ): Promise<any> {
-  const configuration = await config();
   //Steps 1 - 3 already fulfilled at the client
   /*
 	//Step 4: Look up the user in your database
@@ -30,10 +30,11 @@ export async function verify(
 
   //Step 7: Convert clientDataJSON (cData) into a JSON object
   //Note: Per specification, the letiable name of the parsed JSON has to be C. For readability, C is renamed to clientData in this example
-  const data = String.fromCharCode.apply(null, assertion.response.clientDataJSON as unknown as number[]);
-  const clientData: ClientDataJSON = JSON.parse(
-    data
+  const data = String.fromCharCode.apply(
+    null,
+    assertion.response.clientDataJSON as unknown as number[]
   );
+  const clientData: ClientDataJSON = JSON.parse(data);
 
   //Step 8: Verify that the type of the request is webauthn.get
   if (clientData.type !== "webauthn.get") {
@@ -62,8 +63,8 @@ export async function verify(
   //To specify this, we give our server the URL that it is running on as an environment variable
   //If no environment variable is specified, skip this step
   if (
-    configuration["BASE_URL"] &&
-    !(clientData.origin === configuration["BASE_URL"])
+    config.baseURL &&
+    !(clientData.origin === config.baseURL)
   ) {
     return {
       status: 403,
@@ -88,8 +89,8 @@ export async function verify(
     parseAuthenticatorData(authDataBuffer);
 
   if (
-    configuration["RPID"] &&
-    !authenticatorData.rpIdHash.equals(sha256(configuration["RPID"]) as Buffer)
+    config.rpId &&
+    !authenticatorData.rpIdHash.equals(sha256(config.rpId) as Buffer)
   ) {
     return {
       status: 403,
@@ -114,8 +115,8 @@ export async function verify(
   }
 
   //Step 15: Verify that authenticatorData only contains the extensions that you specified in your options. Extensions are custom JSON key-value pairs that you can use to inject custom data into your authenticatorData object. They are optional and by default your authenticatorData object will not contain an extension attribute
-  if (authenticatorData.extensions && configuration["EXPTECTEDEXTENSIONS"]) {
-    let expectedExtensions = configuration["EXPTECTEDEXTENSIONS"].split(",");
+  if (authenticatorData.extensions && config.expectedExtensions) {
+    let expectedExtensions = config.expectedExtensions.split(",");
     let existingExtensions = Object.keys(authenticatorData.extensions);
     for (let i = 0; i < existingExtensions.length; i++) {
       if (!expectedExtensions.includes(existingExtensions[i])) {
@@ -154,8 +155,10 @@ export async function verify(
     ["verify"]
   );
 
-  let signedData = new Uint8Array(assertion.response.authenticatorData.length + hashClient.length);
-  signedData.set((assertion.response.authenticatorData as any));
+  let signedData = new Uint8Array(
+    assertion.response.authenticatorData.length + hashClient.length
+  );
+  signedData.set(assertion.response.authenticatorData as any);
   signedData.set(hashClient, assertion.response.authenticatorData.length);
 
   const rawSignature = derToRaw(assertion.response.signature);
