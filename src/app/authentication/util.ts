@@ -1,7 +1,6 @@
 import * as crypto from "https://deno.land/std@0.173.0/node/crypto.ts";
 import {Buffer} from "https://deno.land/std@0.162.0/node/buffer.ts";
 import * as CBOR from "https://deno.land/x/cbor@v1.4.1/index.js";
-import * as uuid from "https://deno.land/std@0.72.0/uuid/mod.ts";
 import {unparse} from '../lib/uuid-parse.js';
 
 //Function logic copied from Microsoft demo implementation: https://github.com/MicrosoftEdge/webauthnsample/blob/master/fido.js

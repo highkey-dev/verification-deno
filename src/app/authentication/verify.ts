@@ -1,7 +1,6 @@
 import { AuthenticatorData } from "../models/fido/AuthenticatorData.ts";
 import { ClientDataJSON } from "../models/fido/ClientDataJSON.ts";
 import { PublicKeyCredential } from "../models/fido/PublicKeyCredential.ts";
-import * as cache from "./../storage/challengeCache.ts";
 import { derToRaw, parseAuthenticatorData, sha256 } from "./util.ts";
 
 import { Buffer } from "https://deno.land/std@0.162.0/node/buffer.ts";
@@ -30,11 +29,11 @@ export async function verify(
 
   //Step 7: Convert clientDataJSON (cData) into a JSON object
   //Note: Per specification, the letiable name of the parsed JSON has to be C. For readability, C is renamed to clientData in this example
-  const data = String.fromCharCode.apply(
+  let clientDataJSON = String.fromCharCode.apply(
     null,
-    assertion.response.clientDataJSON as unknown as number[]
-  );
-  const clientData: ClientDataJSON = JSON.parse(data);
+    new Uint8Array((assertion.response as any).clientDataJSON) as any
+  )
+  const clientData: ClientDataJSON = JSON.parse(clientDataJSON);
 
   //Step 8: Verify that the type of the request is webauthn.get
   if (clientData.type !== "webauthn.get") {
@@ -43,7 +42,8 @@ export async function verify(
       text: "The operation specified in the clientDataJSON is not webauthn.get",
     };
   }
-
+  /*
+  // TODO: Update comments 
   //Step 9: Verify that the challenge sent by the request matches the original challenge
   if (cache.get(clientData.challenge) === true) {
     return {
@@ -58,7 +58,7 @@ export async function verify(
       text: "The challenge of this request does not match any challenge issued",
     };
   } else cache.set(clientData.challenge, true);
-
+  */
   //Step 10: Check that clientData.origin is actually the origin you would expect
   //To specify this, we give our server the URL that it is running on as an environment variable
   //If no environment variable is specified, skip this step
@@ -81,12 +81,8 @@ export async function verify(
   //If no environment variable is specified, skip this step
   //Note: We first have to decode the authData that we sent as a base64 encoded string to our server
   //Note: For readability, the specified authData variable was renamed into authenticatorData in this implementation
-  const authDataBuffer = Buffer.from(
-    assertion.response.authenticatorData,
-    "base64"
-  );
   const authenticatorData: AuthenticatorData =
-    parseAuthenticatorData(authDataBuffer);
+    parseAuthenticatorData(assertion.response.authenticatorData as unknown as Buffer);
 
   if (
     config.rpId &&
@@ -136,19 +132,13 @@ export async function verify(
       assertion.response.clientDataJSON as any
     )
   );
-  let hashAuthData = new Uint8Array(
-    await crypto.subtle.digest(
-      "SHA-256",
-      assertion.response.authenticatorData as any
-    )
-  );
+
   //Step 17: Verify that the signature is valid. To do so, concatenate authenticatorData and hash and encrypt it with credentialPublicKey (The key that is stored for our specific user).
   //Note: Verification step copied from https://github.com/MicrosoftEdge/webauthnsample/blob/master/fido.js
   const sig = new Uint8Array(Buffer.from(assertion.response.signature));
-  const alg = key.kty === "RSA" ? "RSA-SHA256" : "sha256";
 
   const convertedKey: CryptoKey = await crypto.subtle.importKey(
-    "spki",
+    "jwk",
     key,
     { name: "ECDSA", namedCurve: "P-256" },
     false,

@@ -1,5 +1,5 @@
 import { Buffer } from "https://deno.land/std@0.173.0/node/internal/buffer.mjs";
-import { VerifyCredential } from "../index.action.ts";
+import { verify } from "./authentication/verify.ts";
 
 const verificationObj = {
     "id": "j8uGAKmNAGxJoGFedFfhBV2ZFnLGpumW7U1CuIGdI38",
@@ -450,6 +450,6 @@ const verificationObj = {
   
   const userId = "j8uGAKmNAGxJoGFedFfhBV2ZFnLGpumW7U1CuIGdI38";
   
-  const res = await VerifyCredential(verificationObj, userId, pk, {});
+  const res = await verify(verificationObj as any, userId, pk, {});
   
   console.log(res);
