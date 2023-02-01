@@ -2,9 +2,10 @@
 
 Implementation of Webauthn credential verification for the Deno runtime.
 
-## Current issues
-- verification of credentials against signed message with signature always fails. currently investigating encoding problems with `attestation` response.
-
+# Known Issues
+- Challenge checks are not currently done.
+- RPID checks have been removed.
+- Only `ECDSA` key types have been tested.
 ## Running locally
 **note** Deno version 1.27 or greater is required
 ```bash
