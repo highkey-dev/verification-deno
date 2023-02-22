@@ -3,6 +3,70 @@ import {Buffer} from "https://deno.land/std@0.162.0/node/buffer.ts";
 import * as CBOR from "https://deno.land/x/cbor@v1.4.1/index.js";
 import {unparse} from '../lib/uuid-parse.js';
 
+
+export function generatePublicKeyCredentialCreationOptions(rpId: string, rpName: string) {
+  return {
+    //The challenge has to be a random string emitted by our application server, see documentation for getServerSideChallenge
+    challenge: generateChallenge(),
+    //A string identifier for our server / service. Name is the string displayed to the user when prompted for logging in with our server, id the scope to which our newly scheduled public key will be scoped to.
+    rp: {
+      name: rpName,
+      id: rpId,
+    },
+    user: {
+      //An user-unique ID in your system. If you use an Identity Provider like Azure Active Directory or Auth0, you can use for example the userId scheduled by these systems as an Id
+      //In this demo, the userId is generated client-side, so we don't have to insert anything here
+      id: "",
+      //User name of the user, e.g. the mail adress with which he normally logs into the page
+      name: "",
+      //Real Name of the user
+      displayName: "",
+    },
+    //Specifies which kinds of algorithms are accepted for the creation of the public key. You can find a full list of algorithm codes here: https://www.iana.org/assignments/cose/cose.xhtml#algorithms
+    //For Windows Hello, you must use { alg: -257, type: "public-key" }
+    pubKeyCredParams: [
+      { alg: -7, type: "public-key" },
+      /*
+      { alg: -8, type: "public-key" },
+      { alg: -35, type: "public-key" },
+      { alg: -36, type: "public-key" },
+      { alg: -37, type: "public-key" },
+      { alg: -38, type: "public-key" },
+      { alg: -39, type: "public-key" },
+      { alg: -257, type: "public-key" },
+      { alg: -258, type: "public-key" },
+      { alg: -259, type: "public-key" },
+      */
+    ],
+    //WebAuthn distincts between cross-platform authentication like YubiKeys (e.g. USB sticks that you have to insert into your PC to authenticate) and platform authentication like Windows Hello or Apple Touch ID.
+    //https://w3c.github.io/webauthn/#dictdef-authenticatorselectioncriteria
+    authenticatorSelection: {
+      //Select authenticators that support username-less flows
+      requireResidentKey: false,
+      // select authenticators that support username-less flows
+      residentKey: "preferred",
+      //This attribute decides if the client asks the user again if he really wants to sign up.
+      userVerification: "preferred",
+    },
+    //Time in Milliseconds the user has to complete the authentication before it times out and failes automatically
+    timeout: 60000,
+    //Specifies if the relying party (e.g. our server) wishes to know which Authenticator performed the authentication of the user. You can find all details here: https://w3c.github.io/webauthn/#attestation-conveyance
+    attestation: "indirect",
+    extensions: { credProps: true },
+  }
+}
+
+export function generatePublicKeyCredentialRequestOptions(userId: string) {
+  return {
+    challenge: generateChallenge(),
+    timeout: 60000,
+    // userVerification: "discouraged",
+    // rpId: process.env.RPID,
+    allowCredentials: [{ type: "public-key", id: userId }],
+    // transports: ["internal", "usb", "nfc", "ble"]
+  }
+}
+
 //Function logic copied from Microsoft demo implementation: https://github.com/MicrosoftEdge/webauthnsample/blob/master/fido.js
 //Decrypt the authData Buffer and split it in its single information pieces. Its structure is specified here: https://w3c.github.io/webauthn/#authenticator-data
 export function parseAuthenticatorData(authData: Buffer) {
