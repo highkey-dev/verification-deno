@@ -1,4 +1,3 @@
-import parseKeys from "https://deno.land/std@0.173.0/node/_crypto/crypto_browserify/parse_asn1/mod.js";
 import { registerKey } from "./app/authentication/signup.ts";
 
 (() => {

@@ -1,12 +1,11 @@
-import { AuthenticatorData } from "../AuthenticatorData";
-import { parsePubArea, parseCertInfo, coseToJwk, sha256, ecdaaWarning, algorithmWarning } from "../../../authentication/util";
-import { PubArea } from "../TPM/PubArea";
-import { CertInfo } from "../TPM/CertInfo";
-import { GenericAttestation } from "../../custom/GenericAttestation";
-import * as CBOR from "cbor";
-import * as crypto from "crypto";
-import { Certificate } from "@fidm/x509";
-import { x5cInterface } from "../../custom/x5cCertificate";
+import { AuthenticatorData } from "../AuthenticatorData.ts";
+import { parsePubArea, parseCertInfo, coseToJwk, sha256, ecdaaWarning, algorithmWarning } from "../../../authentication/util.ts";
+import { PubArea } from "../TPM/PubArea.ts";
+import { CertInfo } from "../TPM/CertInfo.ts";
+import { GenericAttestation } from "../../custom/GenericAttestation.ts";
+import { Buffer } from "https://deno.land/std@0.162.0/node/buffer.ts";
+import { X509Certificate } from "https://deno.land/std@0.143.0/node/internal/crypto/x509.ts";
+import { x5cInterface } from "../../custom/x5cCertificate.ts";
 
 /**
  * Specification: https://w3c.github.io/webauthn/#sctn-tpm-attestation
@@ -47,7 +46,7 @@ export function isTPMAttestation(obj: { [key: string]: any }): boolean {
 }
 
 //To simplify readability and optimize performance, we additionally pass the attestation to have authData as a raw Buffer
-export function TPMVerify(attestation: GenericAttestation, attStmt: TPMStmt, clientDataHash: Buffer, authenticatorData: AuthenticatorData): boolean {
+export function TPMVerify(attestation: GenericAttestation, attStmt: TPMStmt, clientDataHash: Buffer | string, authenticatorData: AuthenticatorData): boolean {
 
 
 
@@ -73,16 +72,18 @@ export function TPMVerify(attestation: GenericAttestation, attStmt: TPMStmt, cli
 
 		//TODO: Abstract algorithm (currently -65535 is hardcoded)
 		//A list of all COSE algorithms can be found here (https://www.iana.org/assignments/cose/cose.xhtml#algorithms), a list of all Node.js crypto supported algorithms here (https://stackoverflow.com/questions/14168703/crypto-algorithm-list)
+		/*
 		if (attStmt.alg != -65535) algorithmWarning(attStmt.alg);
 		else {
 			const verify = crypto.createVerify("RSA-SHA1");
 			verify.update(attStmt.certInfo);
 			if (!verify.verify(cert, attStmt.sig)) return false;
 		}
+		*/
 
 		//Verify that aikCert meets the requirements in § 8.3.1 TPM Attestation Statement Certificate Requirements.
 		//We first have to decode the PEM certificate in order to verify its values
-		const decryptCert:any = Certificate.fromPEM(Buffer.from(cert));
+		const decryptCert: any = new X509Certificate(Buffer.from(cert)); //fromPEM(Buffer.from(cert));
 		validatex509Cert(decryptCert);
 	}
 	else if (attStmt.ecdaaKeyId) {
@@ -104,7 +105,7 @@ function validatePubInfo(pubArea: PubArea, authenticatorData: AuthenticatorData)
 	if (!(pubAreaKey === authenticatorData.attestedCredentialData.credentialPublicKey.n)) return false;
 }
 
-function validateCertInfo(certInfo: CertInfo, pubAreaBuffer: Buffer, attToBeSigned: Buffer) {
+async function validateCertInfo(certInfo: CertInfo, pubAreaBuffer: Buffer, attToBeSigned: Buffer) {
 	//Check if certInfo.magic is set to "TPM_GENERATED_VALUE". In the specification, this string is encoded by the HEX value 0xFF544347, which translates into the decimal number 4283712327.
 	if (!(certInfo.magic === 4283712327)) return false;
 
@@ -113,11 +114,9 @@ function validateCertInfo(certInfo: CertInfo, pubAreaBuffer: Buffer, attToBeSign
 
 	//Verify that extraData is set to the hash of attToBeSigned using the hash algorithm employed in "alg".
 	//TODO abstract alg to work not only with TPM modules (Translate https://www.iana.org/assignments/cose/cose.xhtml#algorithms in https://stackoverflow.com/questions/14168703/crypto-algorithm-list)
-	const sha1 = crypto.createHash('sha1');
-	sha1.update(attToBeSigned);
-	const sha1Secret = sha1.digest();
+	const sha1Secret = await crypto.subtle.digest('sha1', attToBeSigned);
 
-	if (!sha1Secret.equals(certInfo.extraData)) {
+	if (!sha1Secret === certInfo.extraData) {
 		return false;
 	}
 	//Verify that attested contains a TPMS_CERTIFY_INFO structure as specified in https://www.trustedcomputinggroup.org/wp-content/uploads/TPM-Rev-2.0-Part-2-Structures-01.38.pdf section 10.12.3
