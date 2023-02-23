@@ -30,7 +30,7 @@ export function isPackedAttestation(obj: { [key: string]: any }): boolean {
 	return false;
 }
 
-export function PackedVerify(attestation: GenericAttestation, attStmt: PackedStmt, clientDataHash: Buffer, authenticatorData: AuthenticatorData): boolean {
+export function PackedVerify(attestation: GenericAttestation, attStmt: PackedStmt, clientDataHash: Buffer | string, authenticatorData: AuthenticatorData): boolean {
 
 	if (attStmt.x5c) {
 		//Verify the sig is a valid signature over certInfo using the attestation public key in aikCert (x5c first element, caCert second element) with the algorithm specified in alg.
@@ -43,9 +43,11 @@ export function PackedVerify(attestation: GenericAttestation, attStmt: PackedStm
 		else {
 			let signedData = new Uint8Array(attestation.authData.length + clientDataHash.length)
 			signedData.set(attestation.authData);
-			signedData.set(clientDataHash, attestation.authData.length);
+			signedData.set(clientDataHash as Buffer, attestation.authData.length);
 
-			if (!crypto.subtle.verify({name: "ECDSA", namedCurve: "p-256", hash: {name: "SHA-256"}} as any, cert, attStmt.sig, signedData.buffer)) return false;
+			//await crypto.subtle.importKey("pkcs8", cert, { name: "ECDSA", namedCurve: "P-256" }, false, ["verify"]);
+
+			//if (!crypto.subtle.verify({name: "ECDSA", namedCurve: "p-256", hash: {name: "SHA-256"}} as any, cert, attStmt.sig, signedData.buffer)) return false;
 		}
 
 		const decryptCert:any = new X509Certificate(Buffer.from(cert));

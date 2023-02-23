@@ -7,5 +7,5 @@ import { registerKey } from "./app/authentication/signup.ts";
     const res: {status: number, text: string, credential: any} = registerKey(pk, userId);
     
     //@ts-ignore: function injected from lit's action context
-    setResponse({response: res.credential});
+    setResponse({response: JSON.stringify(res.credential)});
 })();

@@ -112,7 +112,7 @@ export function registerKey(keyCredentialObject: { [key: string]: any }, userId:
 
 	//Step 13: Verify that the algorithm used to create the Public key matches one of the allowed encryption methods that you specified in the options on the client side.
 	//If no environment variable is specified, skip this step
-	if (authenticatorData.attestedCredentialData.credentialPublicKey.kty === "EC") {
+	if (authenticatorData.attestedCredentialData.credentialPublicKey.kty !== "EC") {
 		return {
 			status: 403,
 			text: "The request used an encryption method that is not allowed by this server"

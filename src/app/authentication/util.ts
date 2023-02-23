@@ -136,12 +136,12 @@ export function coseToJwk(cose: any) {
     let publicKeyJwk = {}
     const publicKeyCbor = CBOR.decode(cose)
     //Determine which encryption method was used to create the public key
-    if (publicKeyCbor.get(3) == -7) {
+    if (publicKeyCbor[3] == -7) {
       publicKeyJwk = {
         kty: "EC",
         crv: "P-256",
-        x: publicKeyCbor.get(-2).toString("base64"),
-        y: publicKeyCbor.get(-3).toString("base64"),
+        x: Buffer.from(publicKeyCbor[-2]).toString("base64"),
+        y: Buffer.from(publicKeyCbor[-3]).toString("base64"),
       }
     } else if (publicKeyCbor.get(3) == -257) {
       publicKeyJwk = {

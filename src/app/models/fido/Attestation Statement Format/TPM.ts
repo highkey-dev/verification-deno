@@ -55,13 +55,15 @@ export function TPMVerify(attestation: GenericAttestation, attStmt: TPMStmt, cli
 	let certInfo: CertInfo = parseCertInfo(attStmt.certInfo);
 
 	//Concatenate authData and clientDataHash to attToBeSigned
-	const attToBeSigned = Buffer.concat([attestation.authData, clientDataHash]);
+	let signedData = new Uint8Array(attestation.authData.length + clientDataHash.length);
+	signedData.set(attestation.authData);
+	signedData.set(clientDataHash as Buffer, attestation.authData.length);
 
 	//Check if all information provided in pubInfo is correct
 	validatePubInfo(pubArea, authenticatorData);
 
 	//Check if all information provided in certInfo is correct
-	validateCertInfo(certInfo, attStmt.pubArea, attToBeSigned);
+	validateCertInfo(certInfo, attStmt.pubArea, Buffer.from(signedData));
 
 	if (attStmt.x5c) {
 		//Verify the sig is a valid signature over certInfo using the attestation public key in aikCert (x5c first element, caCert second element) with the algorithm specified in alg.
@@ -116,7 +118,7 @@ async function validateCertInfo(certInfo: CertInfo, pubAreaBuffer: Buffer, attTo
 	//TODO abstract alg to work not only with TPM modules (Translate https://www.iana.org/assignments/cose/cose.xhtml#algorithms in https://stackoverflow.com/questions/14168703/crypto-algorithm-list)
 	const sha1Secret = await crypto.subtle.digest('sha1', attToBeSigned);
 
-	if (!sha1Secret === certInfo.extraData) {
+	if (!Buffer.from(sha1Secret).equals(certInfo.extraData)) {
 		return false;
 	}
 	//Verify that attested contains a TPMS_CERTIFY_INFO structure as specified in https://www.trustedcomputinggroup.org/wp-content/uploads/TPM-Rev-2.0-Part-2-Structures-01.38.pdf section 10.12.3
@@ -130,7 +132,7 @@ async function validateCertInfo(certInfo: CertInfo, pubAreaBuffer: Buffer, attTo
 	//TODO Abstract Hash algorithm
 	const pubAreaHash = sha256(pubAreaBuffer);
 
-	if (!strippedName.equals(pubAreaHash)) {
+	if (!strippedName.equals(pubAreaHash as Buffer)) {
 		return false;
 	}
 }

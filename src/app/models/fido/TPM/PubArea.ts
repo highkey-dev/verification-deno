@@ -1,3 +1,5 @@
+import { Buffer } from "https://deno.land/std@0.162.0/node/buffer.ts";
+
 export interface PubArea {
 	authPolicy: Buffer;
 	nameAlg: string;
