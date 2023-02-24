@@ -1,5 +1,4 @@
-import { ASN1 } from "@fidm/asn1";
-
+import { Buffer } from "https://deno.land/std@0.162.0/node/buffer.ts";
 export interface x5cInterface {
 	authorityKeyIdentifier: string;
 	basicConstraintsValid: boolean;
@@ -23,7 +22,7 @@ export interface x5cInterface {
 	signatureOID: string;
 	subject: Subject;
 	subjectKeyIdentifier: string;
-	tbsCertificate: ASN1;
+	tbsCertificate: any;
 	uris: Array<string>;
 	validFrom: Date;
 	validTo: Date;
@@ -56,7 +55,7 @@ interface PublicKey {
 	_finalKey: Buffer;
 	_finalPEM: string;
 	_keyRaw: Buffer;
-	_pkcs8: ASN1;
+	_pkcs8: any;
 	algo:string;
 	keyRaw: Buffer;
 	oid:string;

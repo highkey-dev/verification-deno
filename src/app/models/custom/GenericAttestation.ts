@@ -1,3 +1,4 @@
+import { Buffer } from "https://deno.land/std@0.162.0/node/buffer.ts";
 /**
  * Generic representation of a ClientAttestation. Specific attestation types are specified in types -> fido -> Attestation Statement Format
  * https://w3c.github.io/webauthn/#attestation-statement

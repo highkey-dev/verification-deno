@@ -1,4 +1,4 @@
-import { GenericAttestation } from "../../custom/GenericAttestation";
+import { GenericAttestation } from "../../custom/GenericAttestation.ts";
 
 /**
  * Specification: https://w3c.github.io/webauthn/#sctn-none-attestation

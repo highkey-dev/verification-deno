@@ -1,9 +1,9 @@
-import { GenericAttestation } from "../../custom/GenericAttestation";
-import { AuthenticatorData } from "../AuthenticatorData";
-import * as crypto from "crypto";
-import * as util from "../../../authentication/util";
-import { Certificate } from "@fidm/x509";
-import { x5cInterface } from "../../custom/x5cCertificate";
+import { GenericAttestation } from "../../custom/GenericAttestation.ts";
+import { AuthenticatorData } from "../AuthenticatorData.ts";
+import { Buffer } from "https://deno.land/std@0.162.0/node/buffer.ts";
+import * as util from "../../../authentication/util.ts";
+import { X509Certificate } from "https://deno.land/std@0.143.0/node/internal/crypto/x509.ts";
+import { x5cInterface } from "../../custom/x5cCertificate.ts";
 
 /**
  * Specification: https://w3c.github.io/webauthn/#sctn-packed-attestation
@@ -30,7 +30,7 @@ export function isPackedAttestation(obj: { [key: string]: any }): boolean {
 	return false;
 }
 
-export function PackedVerify(attestation: GenericAttestation, attStmt: PackedStmt, clientDataHash: Buffer, authenticatorData: AuthenticatorData): boolean {
+export function PackedVerify(attestation: GenericAttestation, attStmt: PackedStmt, clientDataHash: Buffer | string, authenticatorData: AuthenticatorData): boolean {
 
 	if (attStmt.x5c) {
 		//Verify the sig is a valid signature over certInfo using the attestation public key in aikCert (x5c first element, caCert second element) with the algorithm specified in alg.
@@ -41,13 +41,16 @@ export function PackedVerify(attestation: GenericAttestation, attStmt: PackedStm
 
 		if (attStmt.alg != -7) util.algorithmWarning(attStmt.alg);
 		else {
-			const verify = crypto.createVerify("RSA-SHA256");
-			verify.update(attestation.authData);
-			verify.update(clientDataHash);
-			if (!verify.verify(cert, attStmt.sig)) return false;
+			let signedData = new Uint8Array(attestation.authData.length + clientDataHash.length)
+			signedData.set(attestation.authData);
+			signedData.set(clientDataHash as Buffer, attestation.authData.length);
+
+			//await crypto.subtle.importKey("pkcs8", cert, { name: "ECDSA", namedCurve: "P-256" }, false, ["verify"]);
+
+			//if (!crypto.subtle.verify({name: "ECDSA", namedCurve: "p-256", hash: {name: "SHA-256"}} as any, cert, attStmt.sig, signedData.buffer)) return false;
 		}
 
-		const decryptCert:any = Certificate.fromPEM(Buffer.from(cert));
+		const decryptCert:any = new X509Certificate(Buffer.from(cert));
 		if(!validatex509Cert(decryptCert)) return false;
 	}
 
