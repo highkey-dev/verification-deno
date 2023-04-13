@@ -4,6 +4,11 @@ import { Buffer } from "https://deno.land/std@0.173.0/node/internal/buffer.mjs";
 
 (async () => {
     //@ts-ignore
+    if (!authInfo || authInfo.length < 1) {
+      throw new Error("Does not meet minimum verification requirements");
+    }
+    
+    //@ts-ignore
     for (const info of authInfo) {
       //decode key info
       info.key.x = info.key.x.replace(/\+/g, "-").replace(/\//g, "_").replace(/=/g, "");
